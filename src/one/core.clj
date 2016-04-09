@@ -7,9 +7,9 @@
            [com.badlogic.gdx.files FileHandle]
            [com.badlogic.gdx.utils Array]
            [com.badlogic.gdx.scenes.scene2d Stage]
-           [com.badlogic.gdx.scenes.scene2d.ui TextButton TextButton$TextButtonStyle]
-           )
-  (:require [clojure.data.json :as json]))
+           [com.badlogic.gdx.scenes.scene2d.ui TextButton TextButton$TextButtonStyle])
+  (:require [clojure.data.json :as json]
+            [brute.entity :as entity]))
 
 (defonce exception-lock (atom false))
 
@@ -25,6 +25,17 @@
 (defonce anim-count (atom 0))
 
 (defonce gui-stage (atom nil))
+
+(def ecs (atom nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; components
+
+(defrecord SpriteComponent [])
+(defrecord SpriteAnimationComponent [fsm])
+(defrecord PositionComponent [x y])
+(defrecord PlayerControllerComponent [])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,14 +61,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn init-ecs []
+  (let [player (entity/create-entity)]
+    (-> (entity/create-system)
+        (entity/add-entity player)
+        (entity/add-component player (->PositionComponent 50 50))
+        (entity/add-component player (->SpriteComponent))
+        (entity/add-component player (->PlayerControllerComponent)))))
+
 (defn on-create [game]
+
+  (reset! ecs (init-ecs))
 
   ;; setup ui
 
   (reset! gui-stage (Stage.))
   ;(create-ui @gui-stage)
 
-  
+  ;; read spritesheet metadata:
+
+  (reset! walk-spritesheet (Texture. "resources/blockydude.png"))
 
   (let [file-reader (-> "blockydude.json" clojure.java.io/resource .getFile clojure.java.io/reader)
         metadata (json/read file-reader)
